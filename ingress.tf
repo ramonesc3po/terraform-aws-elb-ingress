@@ -1,13 +1,14 @@
 data "aws_lb" "this" {
-  count = local.check_lb_arn
-  name  = var.lb_name
+  count = 1
+  name  = var.lb_arn == null ? var.lb_name : null
+  arn   = var.lb_arn != null ? var.lb_arn : null
 }
 
 resource "aws_lb_listener" "this" {
   count             = local.create_lb_listener
-  load_balancer_arn = var.lb_arn == "" ? var.lb_arn : data.aws_lb.this.*.arn[count.index]
-  port              = var.listener_port
-  protocol          = var.certificate_arn != null ? var.protocol : "HTTPS"
+  load_balancer_arn = data.aws_lb.this.*.arn[count.index]
+  port              = var.ingress_port
+  protocol          = var.certificate_arn == null ? var.protocol : "HTTPS"
   certificate_arn   = var.certificate_arn
 
   default_action {
@@ -15,35 +16,105 @@ resource "aws_lb_listener" "this" {
 
     fixed_response {
       content_type = "text/plain"
-      message_body = "Fixed response content"
+      message_body = "Fixed response: ok"
       status_code  = "200"
     }
   }
+
+  depends_on = [
+    data.aws_lb.this
+  ]
 }
 
 data "aws_lb_listener" "this" {
-  count             = 1
-  load_balancer_arn = var.lb_arn == "" ? var.lb_arn : data.aws_lb.this.*.arn[count.index]
-  port              = aws_lb_listener.this[count.index].port
+  count = 1
+
+  load_balancer_arn = element(concat(data.aws_lb.this.*.arn, list("")), count.index)
+  port              = var.ingress_port
+
+  depends_on = [
+    "data.aws_lb.this",
+    "aws_lb_listener.this"
+  ]
 }
 
 resource "aws_lb_listener_rule" "this" {
-  count        = 1
-  listener_arn = data.aws_lb.this.*.arn[count.index]
+  count        = local.create_lb_ingress_rule
+  listener_arn = element(concat(data.aws_lb_listener.this.*.arn, list("")), count.index)
+  #  priority     = var.priority
 
+  // Just add 1 action
   action {
-    type = "redirect"
+    type  = "forward"
+    order = 1
 
-    redirect {
-      port        = "443"
-      protocol    = "HTTPS"
-      status_code = "HTTP_301"
-      host        = "https://arena.club"
+    target_group_arn = aws_lb_target_group.this[count.index].arn
+  }
+
+  // Add more then 1 condition
+  dynamic "condition" {
+    for_each = [for rule_condition in var.rule_condition : {
+      field  = rule_condition.field
+      values = rule_condition.values
+    }]
+    content {
+      field  = condition.value.field
+      values = condition.value.values
     }
   }
 
-  condition {
-    field  = "path-pattern"
-    values = ["/health"]
+  lifecycle {
+    create_before_destroy = true
   }
+
+  depends_on = [
+    "aws_lb_target_group.this"
+  ]
+}
+
+##
+# Target Group
+##
+locals {
+  target_group = {
+    port                 = lookup(var.target_group, "port", var.ingress_port)
+    protocol             = var.target_group.protocol
+    deregistration_delay = var.target_group.deregistration_delay
+    target_type          = var.target_group.target_type
+  }
+}
+
+resource "random_id" "this" {
+  byte_length = 3
+
+  keepers = {
+    port = var.target_group.port
+  }
+}
+
+resource "aws_lb_target_group" "this" {
+  count = local.create_lb_ingress_rule
+
+  name                 = "${var.ingress_name}-${var.tier}-${random_id.this.hex}"
+  port                 = local.target_group.port
+  protocol             = local.target_group.protocol
+  deregistration_delay = local.target_group.deregistration_delay
+  target_type          = local.target_group.target_type
+  vpc_id               = data.aws_lb.this[count.index].vpc_id
+  /*
+  health_check {}
+
+  stickiness {
+    type = ""
+  }
+*/
+  depends_on = [
+    data.aws_lb.this
+  ]
+
+  tags = merge({
+    Name      = "${var.ingress_name}-${var.tier}.${random_id.this.hex}"
+    Terraform = "true"
+    Tier      = var.tier
+  }, var.tags)
 }
