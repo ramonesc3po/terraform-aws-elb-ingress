@@ -86,12 +86,32 @@ variable "target_group" {
     protocol             = string
     deregistration_delay = number
     target_type          = string
+    health_check = object({
+      enabled             = bool
+      path                = string
+      protocol            = string
+      matcher             = number
+      interval            = number
+      timeout             = number
+      health_threshold    = number
+      unhealthy_threshold = number
+    })
   })
 
   default = {
-    port                 = null
+    port                 = 80
     protocol             = "HTTP" // HTTP HTTPS TCP UDP
     deregistration_delay = 60
     target_type          = "ip" // ip or instance
+    health_check = {
+      enabled             = true
+      path                = "/"
+      protocol            = "HTTP"
+      matcher             = 200
+      interval            = 100 // In seconds
+      timeout             = 60 // In seconds
+      health_threshold    = 2  // In minutes min 2 max 10
+      unhealthy_threshold = 2  // In minutes min 2 max 10
+    }
   }
 }

@@ -81,6 +81,16 @@ locals {
     protocol             = var.target_group.protocol
     deregistration_delay = var.target_group.deregistration_delay
     target_type          = var.target_group.target_type
+    health_check = {
+      enabled             = var.target_group.health_check.enabled
+      path                = var.target_group.health_check.path
+      protocol            = var.target_group.health_check.protocol
+      matcher             = var.target_group.health_check.matcher
+      interval            = var.target_group.health_check.interval
+      timeout             = var.target_group.health_check.timeout
+      healthy_threshold   = var.target_group.health_check.health_threshold
+      unhealthy_threshold = var.target_group.health_check.unhealthy_threshold
+    }
   }
 }
 
@@ -101,13 +111,24 @@ resource "aws_lb_target_group" "this" {
   deregistration_delay = local.target_group.deregistration_delay
   target_type          = local.target_group.target_type
   vpc_id               = data.aws_lb.this[count.index].vpc_id
-  /*
-  health_check {}
+
+  health_check {
+    enabled             = local.target_group.health_check.enabled
+    port                = "traffic-port"
+    path                = local.target_group.health_check.path
+    protocol            = local.target_group.health_check.protocol
+    matcher             = local.target_group.health_check.matcher
+    interval            = local.target_group.health_check.interval
+    timeout             = local.target_group.health_check.timeout
+    healthy_threshold   = local.target_group.health_check.healthy_threshold
+    unhealthy_threshold = local.target_group.health_check.unhealthy_threshold
+  }
 
   stickiness {
-    type = ""
+    enabled = false
+    type    = "lb_cookie"
   }
-*/
+
   depends_on = [
     data.aws_lb.this
   ]

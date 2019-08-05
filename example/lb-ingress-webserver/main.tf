@@ -19,11 +19,13 @@ module "ingress-webserver" {
       values = ["/api"]
     }
   ]
-
+/*
   target_group = {
     port                 = 3000
     protocol             = "HTTP"
     deregistration_delay = 60
     target_type          = "ip"
+    health_check = ""
   }
+  */
 }
