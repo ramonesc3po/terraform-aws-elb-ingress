@@ -77,19 +77,19 @@ resource "aws_lb_listener_rule" "this" {
 ##
 locals {
   target_group = {
-    port                 = lookup(var.target_group, "port", var.ingress_port)
-    protocol             = var.target_group.protocol
-    deregistration_delay = var.target_group.deregistration_delay
-    target_type          = var.target_group.target_type
+    port                 = lookup(var.target_group, "port")
+    protocol             = lookup(var.target_group, "protocol")
+    deregistration_delay = lookup(var.target_group, "deregistration_delay")
+    target_type          = lookup(var.target_group, "target_type")
     health_check = {
-      enabled             = var.target_group.health_check.enabled
-      path                = var.target_group.health_check.path
-      protocol            = var.target_group.health_check.protocol
-      matcher             = var.target_group.health_check.matcher
-      interval            = var.target_group.health_check.interval
-      timeout             = var.target_group.health_check.timeout
-      healthy_threshold   = var.target_group.health_check.health_threshold
-      unhealthy_threshold = var.target_group.health_check.unhealthy_threshold
+      enabled             = lookup(var.target_group.health_check, "enabled")
+      path                = lookup(var.target_group.health_check, "path")
+      protocol            = lookup(var.target_group.health_check, "protocol")
+      matcher             = lookup(var.target_group.health_check, "matcher")
+      interval            = lookup(var.target_group.health_check, "interval")
+      timeout             = lookup(var.target_group.health_check, "timeout")
+      healthy_threshold   = lookup(var.target_group.health_check, "health_threshold")
+      unhealthy_threshold = lookup(var.target_group.health_check, "unhealthy_threshold")
     }
   }
 }
