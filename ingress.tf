@@ -65,6 +65,7 @@ resource "aws_lb_listener_rule" "this" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes = ["priority"]
   }
 
   depends_on = [
