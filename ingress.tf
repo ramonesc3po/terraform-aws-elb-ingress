@@ -32,10 +32,10 @@ data "aws_lb_listener" "this" {
   load_balancer_arn = element(concat(data.aws_lb.this.*.arn, list("")), count.index)
   port              = var.ingress_port
 
-  depends_on = [
-    "data.aws_lb.this",
-    "aws_lb_listener.this"
-  ]
+#  depends_on = [
+#    "data.aws_lb.this",
+#    "aws_lb_listener.this"
+#  ]
 }
 
 resource "aws_lb_listener_rule" "this" {
