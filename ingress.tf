@@ -27,7 +27,7 @@ resource "aws_lb_listener" "this" {
 }
 
 data "aws_lb_listener" "this" {
-  count = 1
+  count = local.create_lb_listener == 0 ? 1 : 0
 
   load_balancer_arn = element(concat(data.aws_lb.this.*.arn, list("")), count.index)
   port              = var.ingress_port
@@ -40,7 +40,7 @@ data "aws_lb_listener" "this" {
 
 resource "aws_lb_listener_rule" "this" {
   count        = local.create_lb_ingress_rule
-  listener_arn = element(concat(data.aws_lb_listener.this.*.arn, list("")), count.index)
+  listener_arn = var.create_lb_listener == true ? aws_lb_listener.this[count.index].arn : element(concat(data.aws_lb_listener.this.*.arn, list("")), count.index)
   #  priority     = var.priority
 
   // Just add 1 action
