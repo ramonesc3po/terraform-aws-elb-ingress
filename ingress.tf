@@ -95,18 +95,10 @@ locals {
   }
 }
 
-resource "random_id" "this" {
-  byte_length = 3
-
-  keepers = {
-    port = var.target_group.port
-  }
-}
-
 resource "aws_lb_target_group" "this" {
   count = local.create_lb_ingress_rule
 
-  name                 = "${var.ingress_name}-${var.tier}-${random_id.this.hex}"
+  name                 = "${var.ingress_name}-${var.tier}"
   port                 = local.target_group.port
   protocol             = local.target_group.protocol
   deregistration_delay = local.target_group.deregistration_delay
@@ -135,7 +127,7 @@ resource "aws_lb_target_group" "this" {
   ]
 
   tags = merge({
-    Name      = "${var.ingress_name}-${var.tier}.${random_id.this.hex}"
+    Name      = "${var.ingress_name}-${var.tier}"
     Terraform = "true"
     Tier      = var.tier
   }, var.tags)
